@@ -1,0 +1,53 @@
+{
+  "name": "hub75-ts",
+  "version": "0.1.0",
+  "description": "TypeScript API and CLI helpers for ESP32 HUB75 panels",
+  "type": "module",
+  "main": "./dist/api.js",
+  "module": "./dist/api.js",
+  "types": "./dist/api.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/api.d.ts",
+      "import": "./dist/api.js"
+    },
+    "./api": {
+      "types": "./dist/api.d.ts",
+      "import": "./dist/api.js"
+    },
+    "./cli": "./dist/index.js"
+  },
+  "bin": {
+    "hub75": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "prepare": "yarn build",
+    "test": "tsx src/index.ts",
+    "clock": "tsx watch src/clock.ts",
+    "img": "tsx src/img.ts"
+  },
+  "packageManager": "yarn@4.9.2",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/untitledlt/hub75-ts.git"
+  },
+  "bugs": {
+    "url": "https://github.com/untitledlt/hub75-ts/issues"
+  },
+  "homepage": "https://github.com/untitledlt/hub75-ts#readme",
+  "license": "MIT",
+  "dependencies": {
+    "@types/node": "^25.0.3",
+    "@types/pngjs": "^6.0.5",
+    "pngjs": "^7.0.0",
+    "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "tsx": "^4.21.0"
+  }
+}

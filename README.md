@@ -1,10 +1,32 @@
 # hub75-ts
 
-TypeScript helpers for the ESP32 HUB75 UDP protocol described in [../hub75/README.md](../hub75/README.md).
+TypeScript helpers for the ESP32 HUB75 protocol described in [../hub75/README.md](../hub75/README.md). Commands are batched and delivered over a TCP socket to minimize packet loss.
+
+## Installation
+
+Install the package straight from GitHub (no publish step required):
+
+```sh
+# npm	npm install git+https://github.com/untitledlt/hub75-ts.git
+# yarn	yarn add github:untitledlt/hub75-ts
+```
+
+After installation you can import the API helpers or run the bundled CLI:
+
+```ts
+import { Api } from "hub75-ts";
+
+const api = new Api({ ip: "10.0.0.223", port: 1337 });
+api.setColor(255, 255, 255);
+api.print("HELLO");
+await api.send();
+```
+
+When installed as a dependency a `hub75` binary is also available (`npx hub75 ...`).
 
 ## CLI
 
-Run any firmware command from the shell:
+Run any firmware command from the shell (either via `npx hub75` or `yarn tsx src/index.ts` during development):
 
 ```sh
 HUB75_IP=10.0.0.223 yarn tsx src/index.ts set-color 255 255 255
@@ -31,7 +53,10 @@ Supported commands mirror the firmware table:
 - `print text...`
 - `clock-start x y size [bgR bgG bgB]`
 - `clock-stop`
-- `batch <json | @path>` (send multiple commands in one datagram)
+- `region-bitmap x y w h bitmap|@path` (bitmap is `w*h` zeros/ones, whitespace ignored)
+- `batch <json | @path>` (send multiple commands in one TCP batch)
+
+Every `Api` method queues its command. Call `await api.send()` to flush the currently queued commands in a single TCP write. The CLI automatically flushes after each invocation, and `batch` already composes and flushes the provided payload.
 
 ## Image uploader
 
@@ -56,3 +81,12 @@ HUB75_IP=10.0.0.223 yarn tsx src/index.ts batch @commands.json
 ## Clock streamer
 
 `yarn clock` runs [src/clock.ts](src/clock.ts), which sends a HH:MM:SS overlay by composing `SET_COLOR`, `FILL_RECT`, `SET_CURSOR`, and `PRINT` packets every second.
+
+## Development
+
+```sh
+yarn install
+yarn build
+```
+
+`yarn build` compiles the TypeScript sources into `dist/` (with declarations). The build also runs automatically via the `prepare` script so GitHub consumers always receive ready-to-run artifacts.
