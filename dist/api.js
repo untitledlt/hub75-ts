@@ -22,6 +22,7 @@ export const CMD = {
     FRAMEBUFFER_FLUSH: 0x51,
     FRAMEBUFFER_CLEAR: 0x52,
     REGION_BITMAP: 0x74,
+    REGION_BITMAP_8BIT: 0x75,
     POLICE_START: 0x70,
     POLICE_STOP: 0x71,
     PROGRESS_START: 0x72,
@@ -194,6 +195,10 @@ export class Api {
     regionBitmap(x, y, w, h, bitmap) {
         const payload = createRegionBitmapPayload(x, y, w, h, bitmap);
         this.sendCommand({ id: CMD.REGION_BITMAP, payload });
+    }
+    regionBitmap8Bit(x, y, w, h, pixels) {
+        const payload = createRegionBitmap8BitPayload(x, y, w, h, pixels);
+        this.sendCommand({ id: CMD.REGION_BITMAP_8BIT, payload });
     }
     async framebufferChunk(offset, pixelData) {
         if (offset < 0 || offset > 0xffff) {
@@ -439,6 +444,35 @@ export function createRegionBitmapPayload(x, y, w, h, bitmap) {
     const header = Buffer.from([xByte, yByte, width, height]);
     const bitmapPayload = encodeRegionBitmapSource(bitmap, expectedPixels);
     return Buffer.concat([header, bitmapPayload]);
+}
+export function rgb332(r, g, b) {
+    return ((r & 0xe0) | ((g & 0xe0) >> 3) | ((b & 0xc0) >> 6));
+}
+export function createRegionBitmap8BitPayload(x, y, w, h, pixels) {
+    const xByte = normalizeCoordinate(x, "x");
+    const yByte = normalizeCoordinate(y, "y");
+    const width = normalizeSize(w, "width");
+    const height = normalizeSize(h, "height");
+    const expectedPixels = width * height;
+    const headerBytes = 4;
+    if (expectedPixels > 0xff - headerBytes) {
+        throw new Error("regionBitmap8Bit payload exceeds single-frame limit (max 251 pixels)");
+    }
+    let pixelBuffer;
+    if (Buffer.isBuffer(pixels)) {
+        pixelBuffer = pixels;
+    }
+    else if (pixels instanceof Uint8Array) {
+        pixelBuffer = Buffer.from(pixels);
+    }
+    else {
+        pixelBuffer = Buffer.from(pixels);
+    }
+    if (pixelBuffer.length !== expectedPixels) {
+        throw new Error(`regionBitmap8Bit expected ${expectedPixels} pixels but received ${pixelBuffer.length}`);
+    }
+    const header = Buffer.from([xByte, yByte, width, height]);
+    return Buffer.concat([header, pixelBuffer]);
 }
 function normalizeIntervalMs(value) {
     if (!Number.isFinite(value)) {

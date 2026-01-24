@@ -8,6 +8,7 @@ import {
 	IntervalPayloadSize,
 	createIntervalPayload,
 	createRegionBitmapPayload,
+	rgb332,
 	sanitizeText,
 } from "./api.js";
 
@@ -139,6 +140,18 @@ const handlers: Record<string, Handler> = {
 		}
 		const bitmapSource = resolveBatchSource(dataParts.join(" "));
 		api.regionBitmap(byte(x, "x"), byte(y, "y"), byte(w, "w"), byte(h, "h"), bitmapSource);
+	},
+	"region-bitmap-8bit": (args) => {
+		if (args.length < 5) {
+			throw new Error("region-bitmap-8bit requires x y w h pixels");
+		}
+		const [x, y, w, h, ...dataParts] = args;
+		if (!dataParts.length) {
+			throw new Error("region-bitmap-8bit missing pixel data");
+		}
+		const pixelData = resolveBatchSource(dataParts.join(" "));
+		const pixels = typeof pixelData === "string" ? Buffer.from(JSON.parse(pixelData)) : pixelData;
+		api.regionBitmap8Bit(byte(x, "x"), byte(y, "y"), byte(w, "w"), byte(h, "h"), pixels);
 	},
 	invalid: ([length]) => {
 		const size = length === undefined ? undefined : numberArg(length, "bytes");
@@ -544,7 +557,7 @@ fill-screen r g b, set-brightness level, set-font fontId, draw-line x0 y0 x1 y1,
 fill-rect x y w h, text-block x y w h size text..., scroll-text-start x y w h size speed [bgR bgG bgB] text...,
 scroll-text-stop, print text..., clock-start x y size [bgR bgG bgB], clock-stop,
 progress-start x y w h intervalMs [payloadBytes], progress-stop, police-start intervalMs [payloadBytes],
-police-stop, invalid [bytes], batch <json|@file>, help.
+police-stop, region-bitmap x y w h bitmap, region-bitmap-8bit x y w h pixels, invalid [bytes], batch <json|@file>, help.
 
 Environment: HUB75_IP, HUB75_PORT`);
 }

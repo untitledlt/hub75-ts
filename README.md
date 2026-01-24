@@ -54,6 +54,7 @@ Supported commands mirror the firmware table:
 - `clock-start x y size [bgR bgG bgB]`
 - `clock-stop`
 - `region-bitmap x y w h bitmap|@path` (bitmap is `w*h` zeros/ones, whitespace ignored)
+- `region-bitmap-8bit x y w h pixels` (pixels is a JSON array of `w*h` RGB332 bytes or `@path`)
 - `batch <json | @path>` (send multiple commands in one TCP batch)
 
 Every `Api` method queues its command. Call `await api.send()` to flush the currently queued commands in a single TCP write. The CLI automatically flushes after each invocation, and `batch` already composes and flushes the provided payload.
@@ -81,6 +82,54 @@ HUB75_IP=10.0.0.223 yarn tsx src/index.ts batch @commands.json
 ## Clock streamer
 
 `yarn clock` runs [src/clock.ts](src/clock.ts), which sends a HH:MM:SS overlay by composing `SET_COLOR`, `FILL_RECT`, `SET_CURSOR`, and `PRINT` packets every second.
+
+## 8-bit color bitmaps
+
+The `regionBitmap8Bit` API method and `region-bitmap-8bit` CLI command allow you to draw small colored images using the `CMD_REGION_BITMAP_8BIT` (0x75) protocol command. Each pixel uses the RGB332 format (RRR GGG BB), giving you 256 colors per pixel.
+
+### API Usage
+
+```ts
+import { Api, rgb332 } from "hub75-ts";
+
+const api = new Api({ ip: "10.0.0.223", port: 1337 });
+
+// Create a 4x4 gradient from red to blue
+const gradient = Buffer.alloc(16);
+for (let row = 0; row < 4; row++) {
+  for (let col = 0; col < 4; col++) {
+    const r = 255 - (col * 64);
+    const b = row * 64;
+    gradient[row * 4 + col] = rgb332(r, 0, b);
+  }
+}
+
+api.regionBitmap8Bit(2, 2, 4, 4, gradient);
+await api.send();
+```
+
+The `rgb332()` helper function converts 8-bit RGB values to the RGB332 format:
+
+```ts
+rgb332(255, 0, 0)    // Red
+rgb332(0, 255, 0)    // Green
+rgb332(0, 0, 255)    // Blue
+rgb332(255, 255, 0)  // Yellow
+```
+
+### CLI Usage
+
+You can also use the CLI with a JSON array of RGB332 pixel values:
+
+```sh
+# Draw a 2x2 colored square at position (10, 10)
+# Pixels: red, green, blue, yellow
+HUB75_IP=10.0.0.223 yarn tsx src/index.ts region-bitmap-8bit 10 10 2 2 '[224,28,3,252]'
+```
+
+### Example Script
+
+Run the example with `yarn 8bit` or `yarn tsx examples/region-bitmap-8bit.ts` to see various 8-bit color patterns including gradients, rainbows, and color palettes.
 
 ## Development
 

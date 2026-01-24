@@ -1,24 +1,23 @@
-import { createReadStream } from "node:fs";
-import path from "node:path";
-import { PNG } from "pngjs";
-import { Api } from "./api.js";
+import { createReadStream } from 'node:fs';
+import path from 'node:path';
+import { PNG } from 'pngjs';
+import { Api } from '../src/api.js';
+import { ip, port } from './config.js';
 
-const DEFAULT_IP = "10.0.0.223";
-const DEFAULT_PORT = 1337;
-const DEFAULT_IMAGE = path.join("src", "fox.png");
-const PANEL_WIDTH = parseEnvInt("HUB75_WIDTH", 64);
-const PANEL_HEIGHT = parseEnvInt("HUB75_HEIGHT", 64);
-const CHUNK_DELAY_MS = parseEnvInt("HUB75_CHUNK_DELAY_MS", 0);
+const DEFAULT_IMAGE = path.join('examples', 'design.png');
+const PANEL_WIDTH = parseEnvInt('HUB75_WIDTH', 64);
+const PANEL_HEIGHT = parseEnvInt('HUB75_HEIGHT', 64);
+const CHUNK_DELAY_MS = parseEnvInt('HUB75_CHUNK_DELAY_MS', 0);
 const imagePath = path.resolve(process.cwd(), process.argv[2] ?? DEFAULT_IMAGE);
 
 async function loadPng(file: string) {
   return await new Promise<PNG>((resolve, reject) => {
     createReadStream(file)
       .pipe(new PNG())
-      .on("parsed", function parsed(this: PNG) {
+      .on('parsed', function parsed(this: PNG) {
         resolve(this);
       })
-      .on("error", reject);
+      .on('error', reject);
   });
 }
 
@@ -44,27 +43,24 @@ function parseEnvInt(name: string, fallback: number) {
 }
 
 async function main() {
-  const ip = process.env.HUB75_IP ?? DEFAULT_IP;
-  const portEnv = process.env.HUB75_PORT;
-  const port = portEnv ? parseInt(portEnv, 10) : DEFAULT_PORT;
   if (Number.isNaN(port)) {
-    throw new Error(`Invalid HUB75_PORT value: ${portEnv}`);
+    throw new Error(`Invalid HUB75_PORT value: ${port}`);
   }
 
   console.log(`Reading ${imagePath}`);
   const png = await loadPng(imagePath);
 
   if (!PANEL_WIDTH || !PANEL_HEIGHT) {
-    throw new Error("Panel dimensions must be positive");
+    throw new Error('Panel dimensions must be positive');
   }
 
   const totalPixels = PANEL_WIDTH * PANEL_HEIGHT;
   if (!totalPixels) {
-    throw new Error("Target panel area is zero");
+    throw new Error('Target panel area is zero');
   }
 
   if (totalPixels > 0xffff) {
-    throw new Error("Framebuffer offset is 16-bit; reduce HUB75_WIDTH/HEIGHT to <= 65535 pixels");
+    throw new Error('Framebuffer offset is 16-bit; reduce HUB75_WIDTH/HEIGHT to <= 65535 pixels');
   }
 
   const api = new Api({ ip, port });
@@ -102,6 +98,12 @@ async function main() {
     console.log(`Uploading ${PANEL_WIDTH}x${PANEL_HEIGHT} image (${totalPixels} pixels)`);
     await api.uploadFramebuffer(pixelBytes, 180, CHUNK_DELAY_MS);
     console.log(`Image sent to tcp://${ip}:${port}`);
+
+    const bgColor: [number, number, number] = [0, 0, 0];
+    // api.setBrightness(15);
+    api.setColor(60, 60, 20);
+    api.clockStart(8, 55, 1, bgColor);
+    api.send();
   } finally {
     setTimeout(() => api.close(), 50);
   }

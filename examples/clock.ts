@@ -1,12 +1,7 @@
-import { Api } from "./api.js";
+import { Api } from '../src/api.js';
+import { ip, port } from './config.js';
 
-const DEFAULT_IP = "10.0.0.223";
-const DEFAULT_PORT = 1337;
-
-// const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms /5));
-const delay = (ms: number) => new Promise((resolve) => resolve(1));
-
-const api = new Api({ ip: DEFAULT_IP, port: DEFAULT_PORT });
+const api = new Api({ ip, port });
 
 (async () => {
   try {
@@ -16,9 +11,9 @@ const api = new Api({ ip: DEFAULT_IP, port: DEFAULT_PORT });
 
     // api.setBrightness(15);
 
-    api.setColor(0, 100, 0);
+    api.setColor(60, 60, 20);
 
-    api.clockStart(8, 6, 1, bgColor);
+    api.clockStart(8, 10, 1, bgColor);
 
     // api.invalid();
 
@@ -30,17 +25,18 @@ const api = new Api({ ip: DEFAULT_IP, port: DEFAULT_PORT });
 
     api.progressStart(0, 0, 64, 3, 1000);
 
-    
     // api.drawRect(0, 18, 64, 38);
     // api.setColor(95, 100, 100);
     // api.textBlock(0, 8, 64, 50, 1, "Paksas geriausias, tu viska pas dieva gali");
-    
+
     // api.setColor(0, 0, 100);
     // api.drawLine(0, 18, 63, 64);
-    // api.scrollTextStart(2, 28, 60, 16, 1, 4, "Cia tu klausi apie antra pakopa?", bgColor);
-    
+    api.scrollTextStart(2, 28, 60, 16, 1, 4, 'Paksas geriausias!', bgColor);
+
+    api.regionBitmap(0, 50, 4, 4, new Uint8Array([0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0]));
+
     await api.send();
-    
+
     // api.drawLine(0, 0, 62, 0);
     // await delay(3000);
     // api.policeStop();

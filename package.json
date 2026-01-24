@@ -34,9 +34,10 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "prepare": "yarn build",
-    "test": "tsx src/index.ts",
-    "clock": "tsx watch src/clock.ts",
-    "img": "tsx src/img.ts"
+    "test": "tsx examples/index.ts",
+    "clock": "tsx watch examples/clock.ts",
+    "8bit": "tsx watch examples/region-bitmap-8bit.ts",
+    "img": "tsx watch examples/img.ts"
   },
   "packageManager": "yarn@4.9.2",
   "repository": {

@@ -23,6 +23,7 @@ export declare const CMD: {
     readonly FRAMEBUFFER_FLUSH: 81;
     readonly FRAMEBUFFER_CLEAR: 82;
     readonly REGION_BITMAP: 116;
+    readonly REGION_BITMAP_8BIT: 117;
     readonly POLICE_START: 112;
     readonly POLICE_STOP: 113;
     readonly PROGRESS_START: 114;
@@ -70,6 +71,7 @@ export declare class Api {
     scrollTextStop(): void;
     textBlock(x: number, y: number, w: number, h: number, size: number, text: string | Buffer): void;
     regionBitmap(x: number, y: number, w: number, h: number, bitmap: RegionBitmapSource): void;
+    regionBitmap8Bit(x: number, y: number, w: number, h: number, pixels: Buffer | Uint8Array | number[]): void;
     framebufferChunk(offset: number, pixelData: Buffer | Uint8Array | number[]): Promise<void>;
     framebufferFlush(): Promise<void>;
     framebufferClear(color?: [number, number, number]): void;
@@ -88,4 +90,6 @@ export declare class Api {
 export declare function sanitizeText(input: string): string;
 export declare function createIntervalPayload(intervalMs: number, payloadBytes?: IntervalPayloadSize): Buffer<ArrayBuffer>;
 export declare function createRegionBitmapPayload(x: number, y: number, w: number, h: number, bitmap: RegionBitmapSource): Buffer<ArrayBuffer>;
+export declare function rgb332(r: number, g: number, b: number): number;
+export declare function createRegionBitmap8BitPayload(x: number, y: number, w: number, h: number, pixels: Buffer | Uint8Array | number[]): Buffer<ArrayBuffer>;
 export {};
