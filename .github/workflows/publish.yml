@@ -46,7 +46,11 @@ jobs:
           fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
           "
 
+      - name: Configure Yarn authentication
+        run: |
+          yarn config set npmScopes.untitledlt.npmRegistryServer "https://npm.pkg.github.com"
+          yarn config set npmScopes.untitledlt.npmAlwaysAuth true
+          yarn config set npmScopes.untitledlt.npmAuthToken "${{ secrets.GITHUB_TOKEN }}"
+
       - name: Publish to GitHub Packages
         run: yarn npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
