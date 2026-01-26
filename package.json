@@ -37,7 +37,8 @@
     "test": "tsx examples/index.ts",
     "clock": "tsx watch examples/clock.ts",
     "8bit": "tsx watch examples/region-bitmap-8bit.ts",
-    "img": "tsx watch examples/img.ts"
+    "img": "tsx watch examples/img.ts",
+    "weather": "tsx watch examples/regionBitmap8Bit-weather.ts"
   },
   "packageManager": "yarn@4.9.2",
   "repository": {

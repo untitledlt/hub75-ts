@@ -1,7 +1,7 @@
-import { Api } from '../src/api.js';
+import { HUB75 } from '../src/api.js';
 import { ip, port } from './config.js';
 
-const api = new Api({ ip, port });
+const api = new HUB75({ ip, port });
 
 (async () => {
   try {

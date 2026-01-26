@@ -1,5 +1,5 @@
-import net from "node:net";
-import { Buffer } from "node:buffer";
+import net from 'node:net';
+import { Buffer } from 'node:buffer';
 type CommandPayload = Buffer | Iterable<number>;
 export declare const CMD: {
     readonly CLEAR: 1;
@@ -36,18 +36,18 @@ export interface Command {
     id: CommandId;
     payload?: CommandPayload;
 }
-export interface ApiOptions {
+export interface HUB75Options {
     ip: string;
     port?: number;
     socket?: net.Socket;
 }
-export declare class Api {
+export declare class HUB75 {
     private readonly socket;
     private readonly ready;
     private sendQueue;
     private pendingFrames;
     private pendingByteLength;
-    constructor({ ip, port, socket }: ApiOptions);
+    constructor({ ip, port, socket }: HUB75Options);
     clear(): void;
     setColor(r: number, g: number, b: number): void;
     setCursor(x: number, y: number): void;

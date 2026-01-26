@@ -1,7 +1,7 @@
 import { createReadStream } from 'node:fs';
 import path from 'node:path';
 import { PNG } from 'pngjs';
-import { Api } from '../src/api.js';
+import { HUB75 } from '../src/api.js';
 import { ip, port } from './config.js';
 
 const DEFAULT_IMAGE = path.join('examples', 'design.png');
@@ -63,7 +63,7 @@ async function main() {
     throw new Error('Framebuffer offset is 16-bit; reduce HUB75_WIDTH/HEIGHT to <= 65535 pixels');
   }
 
-  const api = new Api({ ip, port });
+  const api = new HUB75({ ip, port });
   api.clockStop();
   api.clear();
   api.setBrightness(30);
@@ -101,6 +101,7 @@ async function main() {
 
     const bgColor: [number, number, number] = [0, 0, 0];
     // api.setBrightness(15);
+    // api.clear();
     api.setColor(60, 60, 20);
     api.clockStart(8, 55, 1, bgColor);
     api.send();

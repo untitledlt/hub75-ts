@@ -14,11 +14,11 @@ Install the package straight from GitHub (no publish step required):
 After installation you can import the API helpers or run the bundled CLI:
 
 ```ts
-import { Api } from "hub75-ts";
+import { HUB75 } from 'hub75-ts';
 
-const api = new Api({ ip: "10.0.0.223", port: 1337 });
+const api = new HUB75({ ip: '10.0.0.223', port: 1337 });
 api.setColor(255, 255, 255);
-api.print("HELLO");
+api.print('HELLO');
 await api.send();
 ```
 
@@ -67,9 +67,9 @@ Example batch file (`commands.json`):
 
 ```json
 [
-	{ "cmd": "setColor", "args": [255, 255, 255] },
-	{ "cmd": "setCursor", "args": [2, 10] },
-	{ "cmd": "print", "text": "HELLO" }
+  { "cmd": "setColor", "args": [255, 255, 255] },
+  { "cmd": "setCursor", "args": [2, 10] },
+  { "cmd": "print", "text": "HELLO" }
 ]
 ```
 
@@ -90,15 +90,15 @@ The `regionBitmap8Bit` API method and `region-bitmap-8bit` CLI command allow you
 ### API Usage
 
 ```ts
-import { Api, rgb332 } from "hub75-ts";
+import { HUB75, rgb332 } from 'hub75-ts';
 
-const api = new Api({ ip: "10.0.0.223", port: 1337 });
+const api = new HUB75({ ip: '10.0.0.223', port: 1337 });
 
 // Create a 4x4 gradient from red to blue
 const gradient = Buffer.alloc(16);
 for (let row = 0; row < 4; row++) {
   for (let col = 0; col < 4; col++) {
-    const r = 255 - (col * 64);
+    const r = 255 - col * 64;
     const b = row * 64;
     gradient[row * 4 + col] = rgb332(r, 0, b);
   }
@@ -111,10 +111,10 @@ await api.send();
 The `rgb332()` helper function converts 8-bit RGB values to the RGB332 format:
 
 ```ts
-rgb332(255, 0, 0)    // Red
-rgb332(0, 255, 0)    // Green
-rgb332(0, 0, 255)    // Blue
-rgb332(255, 255, 0)  // Yellow
+rgb332(255, 0, 0); // Red
+rgb332(0, 255, 0); // Green
+rgb332(0, 0, 255); // Blue
+rgb332(255, 255, 0); // Yellow
 ```
 
 ### CLI Usage

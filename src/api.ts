@@ -1,5 +1,5 @@
-import net from "node:net";
-import { Buffer } from "node:buffer";
+import net from 'node:net';
+import { Buffer } from 'node:buffer';
 
 type CommandPayload = Buffer | Iterable<number>;
 
@@ -42,20 +42,20 @@ export interface Command {
   payload?: CommandPayload;
 }
 
-export interface ApiOptions {
+export interface HUB75Options {
   ip: string;
   port?: number;
   socket?: net.Socket;
 }
 
-export class Api {
+export class HUB75 {
   private readonly socket: net.Socket;
   private readonly ready: Promise<void>;
   private sendQueue: Promise<void>;
   private pendingFrames: Buffer[] = [];
   private pendingByteLength = 0;
 
-  constructor({ ip, port = 1337, socket }: ApiOptions) {
+  constructor({ ip, port = 1337, socket }: HUB75Options) {
     this.socket = socket ?? net.createConnection({ host: ip, port });
     this.socket.setNoDelay(true);
 
@@ -63,8 +63,8 @@ export class Api {
     this.ready = isPending
       ? new Promise((resolve, reject) => {
           const cleanup = () => {
-            this.socket.off("connect", onConnect);
-            this.socket.off("error", onError);
+            this.socket.off('connect', onConnect);
+            this.socket.off('error', onError);
           };
           const onConnect = () => {
             cleanup();
@@ -74,17 +74,17 @@ export class Api {
             cleanup();
             reject(error);
           };
-          this.socket.once("connect", onConnect);
-          this.socket.once("error", onError);
+          this.socket.once('connect', onConnect);
+          this.socket.once('error', onError);
         })
       : Promise.resolve();
 
     this.ready.catch((error) => {
-      console.error("TCP connection failed", error);
+      console.error('TCP connection failed', error);
     });
 
-    this.socket.on("error", (error) => {
-      console.error("TCP socket error", error);
+    this.socket.on('error', (error) => {
+      console.error('TCP socket error', error);
     });
 
     this.sendQueue = Promise.resolve();
@@ -141,11 +141,7 @@ export class Api {
   }
 
   clockStart(x: number, y: number, size: number, bgColor?: [number, number, number]) {
-    const payload = [
-      clampByte(x),
-      clampByte(y),
-      clampByte(Math.max(1, size | 0)),
-    ];
+    const payload = [clampByte(x), clampByte(y), clampByte(Math.max(1, size | 0))];
 
     if (bgColor) {
       const [r, g, b] = bgColor;
@@ -176,12 +172,7 @@ export class Api {
     intervalMs: number,
     payloadBytes?: IntervalPayloadSize
   ) {
-    const header = Buffer.from([
-      clampByte(x),
-      clampByte(y),
-      clampByte(w),
-      clampByte(h),
-    ]);
+    const header = Buffer.from([clampByte(x), clampByte(y), clampByte(w), clampByte(h)]);
     const intervalPayload = createIntervalPayload(intervalMs, payloadBytes);
     this.sendCommand({
       id: CMD.PROGRESS_START,
@@ -194,15 +185,13 @@ export class Api {
   }
 
   invalid(byteLength = 8) {
-    const normalized = Number.isFinite(byteLength)
-      ? Math.max(1, Math.min(255, byteLength | 0))
-      : 8;
+    const normalized = Number.isFinite(byteLength) ? Math.max(1, Math.min(255, byteLength | 0)) : 8;
     const garbage = Buffer.allocUnsafe(normalized);
     for (let i = 0; i < normalized; i += 1) {
       garbage[i] = Math.floor(Math.random() * 0x100);
     }
     this.enqueueFrame(garbage).catch((error) => {
-      console.error("Socket send failed", error);
+      console.error('Socket send failed', error);
     });
   }
 
@@ -218,7 +207,7 @@ export class Api {
   ) {
     const body = this.encodeTextPayload(text);
     if (body.length === 0) {
-      throw new Error("scrollTextStart requires text payload");
+      throw new Error('scrollTextStart requires text payload');
     }
 
     const headerBytes = [
@@ -246,17 +235,10 @@ export class Api {
     this.sendCommand({ id: CMD.SCROLL_TEXT_STOP });
   }
 
-  textBlock(
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-    size: number,
-    text: string | Buffer
-  ) {
+  textBlock(x: number, y: number, w: number, h: number, size: number, text: string | Buffer) {
     const body = this.encodeTextPayload(text);
     if (body.length === 0) {
-      throw new Error("textBlock requires text payload");
+      throw new Error('textBlock requires text payload');
     }
 
     const header = Buffer.from([
@@ -273,13 +255,7 @@ export class Api {
     });
   }
 
-  regionBitmap(
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-    bitmap: RegionBitmapSource
-  ) {
+  regionBitmap(x: number, y: number, w: number, h: number, bitmap: RegionBitmapSource) {
     const payload = createRegionBitmapPayload(x, y, w, h, bitmap);
     this.sendCommand({ id: CMD.REGION_BITMAP, payload });
   }
@@ -297,7 +273,7 @@ export class Api {
 
   async framebufferChunk(offset: number, pixelData: Buffer | Uint8Array | number[]) {
     if (offset < 0 || offset > 0xffff) {
-      throw new Error("framebufferChunk offset must fit in 16 bits");
+      throw new Error('framebufferChunk offset must fit in 16 bits');
     }
 
     let pixels: Buffer;
@@ -310,11 +286,11 @@ export class Api {
     }
 
     if (pixels.length === 0) {
-      throw new Error("framebufferChunk payload must include pixel data");
+      throw new Error('framebufferChunk payload must include pixel data');
     }
 
     if (pixels.length + 2 > 0xff) {
-      throw new Error("framebufferChunk payload exceeds single-frame limit (max 253 pixel bytes)");
+      throw new Error('framebufferChunk payload exceeds single-frame limit (max 253 pixel bytes)');
     }
 
     const payload = Buffer.allocUnsafe(2 + pixels.length);
@@ -340,11 +316,11 @@ export class Api {
 
   async uploadFramebuffer(pixels: Buffer, chunkPixels = 180, interChunkDelayMs = 0) {
     if (pixels.length === 0) {
-      throw new Error("uploadFramebuffer expects at least one pixel");
+      throw new Error('uploadFramebuffer expects at least one pixel');
     }
     const bytesPerChunk = Math.min(chunkPixels, 0xff - 2);
     if (bytesPerChunk <= 0) {
-      throw new Error("chunk size too small");
+      throw new Error('chunk size too small');
     }
     let offset = 0;
     for (let cursor = 0; cursor < pixels.length; cursor += bytesPerChunk) {
@@ -403,7 +379,7 @@ export class Api {
   private encodeCommand(command: Command) {
     const payload = this.encodePayload(command.payload);
     if (payload.length > 0xff) {
-      throw new Error("Payload too large for single command frame");
+      throw new Error('Payload too large for single command frame');
     }
     const frame = Buffer.alloc(2 + payload.length);
     frame[0] = command.id & 0xff;
@@ -427,9 +403,9 @@ export class Api {
             reject(error);
           };
           const cleanup = () => {
-            this.socket.off("error", onError);
+            this.socket.off('error', onError);
           };
-          this.socket.once("error", onError);
+          this.socket.once('error', onError);
           try {
             this.socket.write(frame, () => {
               cleanup();
@@ -461,7 +437,7 @@ export class Api {
       return text;
     }
     const ascii = sanitizeText(text);
-    return Buffer.from(ascii, "ascii");
+    return Buffer.from(ascii, 'ascii');
   }
 }
 
@@ -477,54 +453,114 @@ function sleep(ms: number) {
 }
 
 const ASCII_SUBSTITUTIONS: Record<string, string> = {
-  "\u00df": "ss",
-  "\u1e9e": "SS",
-  "\u00c6": "AE",
-  "\u00e6": "ae",
-  "\u0152": "OE",
-  "\u0153": "oe",
-  "\u00d8": "O",
-  "\u00f8": "o",
-  "\u00c5": "A",
-  "\u00e5": "a",
-  "\u0141": "L",
-  "\u0142": "l",
-  "\u0110": "D",
-  "\u0111": "d",
-  "\u00de": "Th",
-  "\u00fe": "th",
-  "\u014a": "N",
-  "\u014b": "n",
-  "\u0126": "H",
-  "\u0127": "h",
-  "\u0132": "IJ",
-  "\u0133": "ij",
-  "\u00d1": "N",
-  "\u00f1": "n",
-  "\u00a0": " ",
+  // German
+  '\u00df': 'ss',
+  '\u1e9e': 'SS',
+  // Nordic and other European
+  '\u00c6': 'AE',
+  '\u00e6': 'ae',
+  '\u0152': 'OE',
+  '\u0153': 'oe',
+  '\u00d8': 'O',
+  '\u00f8': 'o',
+  '\u00c5': 'A',
+  '\u00e5': 'a',
+  '\u0141': 'L',
+  '\u0142': 'l',
+  '\u0110': 'D',
+  '\u0111': 'd',
+  '\u00de': 'Th',
+  '\u00fe': 'th',
+  '\u014a': 'N',
+  '\u014b': 'n',
+  '\u0126': 'H',
+  '\u0127': 'h',
+  '\u0132': 'IJ',
+  '\u0133': 'ij',
+  '\u00d1': 'N',
+  '\u00f1': 'n',
+  // Lithuanian
+  '\u0104': 'A', // Ą
+  '\u0105': 'a', // ą
+  '\u010c': 'C', // Č
+  '\u010d': 'c', // č
+  '\u0118': 'E', // Ę
+  '\u0119': 'e', // ę
+  '\u0116': 'E', // Ė
+  '\u0117': 'e', // ė
+  '\u012e': 'I', // Į
+  '\u012f': 'i', // į
+  '\u0160': 'S', // Š
+  '\u0161': 's', // š
+  '\u0172': 'U', // Ų
+  '\u0173': 'u', // ų
+  '\u016a': 'U', // Ū
+  '\u016b': 'u', // ū
+  '\u017d': 'Z', // Ž
+  '\u017e': 'z', // ž
+  // Whitespace
+  '\u00a0': ' ',
+  // Quotation marks (smart/curly quotes)
+  '\u2018': "'", // ' left single quotation mark
+  '\u2019': "'", // ' right single quotation mark
+  '\u201a': "'", // ‚ single low-9 quotation mark
+  '\u201b': "'", // ‛ single high-reversed-9 quotation mark
+  '\u201c': '"', // " left double quotation mark
+  '\u201d': '"', // " right double quotation mark
+  '\u201e': '"', // „ double low-9 quotation mark
+  '\u201f': '"', // ‟ double high-reversed-9 quotation mark
+  '\u2032': "'", // ′ prime
+  '\u2033': '"', // ″ double prime
 };
 
 export function sanitizeText(input: string) {
   if (!input) {
-    return "";
+    return '';
   }
+
+  // First substitute known extended characters (Lithuanian, German, Nordic, etc.)
   const substituted = substituteExtendedChars(input);
-  const decomposed = substituted.normalize("NFKD");
-  const withoutMarks = decomposed.replace(/[\u0300-\u036f]/g, "");
-  let result = "";
-  for (const char of withoutMarks) {
+
+  // Normalize Unicode (NFKD = decompose characters into base + combining marks)
+  const decomposed = substituted.normalize('NFKD');
+
+  // Remove combining diacritical marks
+  const withoutMarks = decomposed.replace(/[\u0300-\u036f]/g, '');
+
+  // Strip emoticons and other problematic Unicode ranges
+  // Note: Using \u{...} syntax with 'u' flag for code points > U+FFFF
+  const withoutEmoticons = withoutMarks
+    // Emoticons and symbols (including emoji)
+    .replace(/[\u2600-\u26FF]/gu, '') // Miscellaneous Symbols
+    .replace(/[\u2700-\u27BF]/gu, '') // Dingbats
+    .replace(/[\u{1F300}-\u{1F5FF}]/gu, '') // Misc Symbols and Pictographs
+    .replace(/[\u{1F600}-\u{1F64F}]/gu, '') // Emoticons
+    .replace(/[\u{1F680}-\u{1F6FF}]/gu, '') // Transport and Map
+    .replace(/[\u{1F700}-\u{1F77F}]/gu, '') // Alchemical Symbols
+    .replace(/[\u{1F780}-\u{1F7FF}]/gu, '') // Geometric Shapes Extended
+    .replace(/[\u{1F800}-\u{1F8FF}]/gu, '') // Supplemental Arrows-C
+    .replace(/[\u{1F900}-\u{1F9FF}]/gu, '') // Supplemental Symbols and Pictographs
+    .replace(/[\u{1FA00}-\u{1FA6F}]/gu, '') // Chess Symbols
+    .replace(/[\u{1FA70}-\u{1FAFF}]/gu, '') // Symbols and Pictographs Extended-A
+    .replace(/[\uFE00-\uFE0F]/gu, '') // Variation Selectors
+    .replace(/\u200D/gu, ''); // Zero Width Joiner (used in emoji combinations)
+
+  // Keep only printable ASCII and allowed control characters
+  let result = '';
+  for (const char of withoutEmoticons) {
     const code = char.charCodeAt(0);
     const isPrintableAscii = code >= 0x20 && code <= 0x7e;
-    const isControlAllowed = char === "\n" || char === "\r" || char === "\t";
+    const isControlAllowed = char === '\n' || char === '\r' || char === '\t';
     if (isPrintableAscii || isControlAllowed) {
       result += char;
     }
   }
+
   return result;
 }
 
 function substituteExtendedChars(text: string) {
-  let result = "";
+  let result = '';
   for (const char of text) {
     const replacement = ASCII_SUBSTITUTIONS[char];
     result += replacement ?? char;
@@ -536,12 +572,12 @@ export function createIntervalPayload(intervalMs: number, payloadBytes?: Interva
   const normalized = normalizeIntervalMs(intervalMs);
   const width = payloadBytes ?? (normalized > 0xffff ? 4 : 2);
   if (width !== 2 && width !== 4) {
-    throw new Error("Interval payload must be 2 or 4 bytes");
+    throw new Error('Interval payload must be 2 or 4 bytes');
   }
 
   if (width === 2) {
     if (normalized > 0xffff) {
-      throw new Error("Interval exceeds 16-bit; request payloadBytes=4");
+      throw new Error('Interval exceeds 16-bit; request payloadBytes=4');
     }
     const payload = Buffer.allocUnsafe(2);
     payload[0] = (normalized >> 8) & 0xff;
@@ -562,14 +598,14 @@ export function createRegionBitmapPayload(
   h: number,
   bitmap: RegionBitmapSource
 ) {
-  const xByte = normalizeCoordinate(x, "x");
-  const yByte = normalizeCoordinate(y, "y");
-  const width = normalizeSize(w, "width");
-  const height = normalizeSize(h, "height");
+  const xByte = normalizeCoordinate(x, 'x');
+  const yByte = normalizeCoordinate(y, 'y');
+  const width = normalizeSize(w, 'width');
+  const height = normalizeSize(h, 'height');
   const expectedPixels = width * height;
   const headerBytes = 4;
   if (expectedPixels > 0xff - headerBytes) {
-    throw new Error("regionBitmap payload exceeds single-frame limit (max 251 pixels)");
+    throw new Error('regionBitmap payload exceeds single-frame limit (max 251 pixels)');
   }
   const header = Buffer.from([xByte, yByte, width, height]);
   const bitmapPayload = encodeRegionBitmapSource(bitmap, expectedPixels);
@@ -577,7 +613,10 @@ export function createRegionBitmapPayload(
 }
 
 export function rgb332(r: number, g: number, b: number): number {
-  return ((r & 0xe0) | ((g & 0xe0) >> 3) | ((b & 0xc0) >> 6));
+  const r3 = (r >> 5) & 0x07; // Top 3 bits of red
+  const g3 = (g >> 5) & 0x07; // Top 3 bits of green
+  const b2 = (b >> 6) & 0x03; // Top 2 bits of blue
+  return (r3 << 5) | (g3 << 2) | b2;
 }
 
 export function createRegionBitmap8BitPayload(
@@ -587,16 +626,16 @@ export function createRegionBitmap8BitPayload(
   h: number,
   pixels: Buffer | Uint8Array | number[]
 ) {
-  const xByte = normalizeCoordinate(x, "x");
-  const yByte = normalizeCoordinate(y, "y");
-  const width = normalizeSize(w, "width");
-  const height = normalizeSize(h, "height");
+  const xByte = normalizeCoordinate(x, 'x');
+  const yByte = normalizeCoordinate(y, 'y');
+  const width = normalizeSize(w, 'width');
+  const height = normalizeSize(h, 'height');
   const expectedPixels = width * height;
   const headerBytes = 4;
   if (expectedPixels > 0xff - headerBytes) {
-    throw new Error("regionBitmap8Bit payload exceeds single-frame limit (max 251 pixels)");
+    throw new Error('regionBitmap8Bit payload exceeds single-frame limit (max 251 pixels)');
   }
-  
+
   let pixelBuffer: Buffer;
   if (Buffer.isBuffer(pixels)) {
     pixelBuffer = pixels;
@@ -605,11 +644,13 @@ export function createRegionBitmap8BitPayload(
   } else {
     pixelBuffer = Buffer.from(pixels);
   }
-  
+
   if (pixelBuffer.length !== expectedPixels) {
-    throw new Error(`regionBitmap8Bit expected ${expectedPixels} pixels but received ${pixelBuffer.length}`);
+    throw new Error(
+      `regionBitmap8Bit expected ${expectedPixels} pixels but received ${pixelBuffer.length}`
+    );
   }
-  
+
   const header = Buffer.from([xByte, yByte, width, height]);
   return Buffer.concat([header, pixelBuffer]);
 }
@@ -640,7 +681,7 @@ function normalizeSize(value: number, label: string) {
 }
 
 function encodeRegionBitmapSource(source: RegionBitmapSource, expectedPixels: number) {
-  if (typeof source === "string") {
+  if (typeof source === 'string') {
     return encodeBitmapFromString(source, expectedPixels);
   }
   if (Buffer.isBuffer(source)) {
@@ -649,13 +690,13 @@ function encodeRegionBitmapSource(source: RegionBitmapSource, expectedPixels: nu
   if (isIterable(source)) {
     return encodeBitmapFromIterable(source, expectedPixels);
   }
-  throw new Error("regionBitmap bitmap must be a string, Buffer, or iterable of numbers");
+  throw new Error('regionBitmap bitmap must be a string, Buffer, or iterable of numbers');
 }
 
 function encodeBitmapFromString(text: string, expectedPixels: number) {
-  const sanitized = text.replace(/\s+/g, "");
+  const sanitized = text.replace(/\s+/g, '');
   if (!sanitized.length) {
-    throw new Error("regionBitmap bitmap string is empty");
+    throw new Error('regionBitmap bitmap string is empty');
   }
   const buffer = Buffer.alloc(expectedPixels);
   let index = 0;
@@ -663,7 +704,7 @@ function encodeBitmapFromString(text: string, expectedPixels: number) {
     if (index >= expectedPixels) {
       throw new Error(`regionBitmap expected ${expectedPixels} pixels but received more data`);
     }
-    buffer[index] = char === "1" ? 1 : char === "0" ? 0 : invalidBitmapChar(char);
+    buffer[index] = char === '1' ? 1 : char === '0' ? 0 : invalidBitmapChar(char);
     index += 1;
   }
   if (index !== expectedPixels) {
@@ -690,7 +731,7 @@ function encodeBitmapFromIterable(source: Iterable<number>, expectedPixels: numb
 
 function normalizeBitmapValue(value: number) {
   if (!Number.isFinite(value)) {
-    throw new Error("regionBitmap bitmap values must be numeric");
+    throw new Error('regionBitmap bitmap values must be numeric');
   }
   const normalized = value & 0xff;
   if (normalized === 0 || normalized === 0x30) {
@@ -707,5 +748,5 @@ function invalidBitmapChar(char: string): never {
 }
 
 function isIterable(value: unknown): value is Iterable<number> {
-  return typeof value === "object" && value !== null && Symbol.iterator in value;
+  return typeof value === 'object' && value !== null && Symbol.iterator in value;
 }
