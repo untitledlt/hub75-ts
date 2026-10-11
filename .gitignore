@@ -1,3 +1,10 @@
+# Build output
+dist/
+
+# Yarn Berry PnP/install artifacts
+.pnp.*
+.yarn/install-state.gz
+
 # Logs
 logs
 *.log

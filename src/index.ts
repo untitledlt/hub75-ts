@@ -12,7 +12,7 @@ import {
   sanitizeText,
 } from './api.js';
 
-const DEFAULT_IP = '10.0.0.223';
+const DEFAULT_IP = '192.168.1.100';
 const DEFAULT_PORT = 1337;
 
 const ip = process.env.HUB75_IP ?? DEFAULT_IP;

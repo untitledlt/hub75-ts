@@ -1,6 +1,6 @@
 import { HUB75, rgb332 } from '../src/api.js';
 
-const DEFAULT_IP = '10.0.0.78';
+const DEFAULT_IP = '192.168.1.100';
 const DEFAULT_PORT = 1337;
 
 const api = new HUB75({ ip: DEFAULT_IP, port: DEFAULT_PORT });

@@ -16,7 +16,7 @@ After installation you can import the API helpers or run the bundled CLI:
 ```ts
 import { HUB75 } from 'hub75-ts';
 
-const api = new HUB75({ ip: '10.0.0.223', port: 1337 });
+const api = new HUB75({ ip: '192.168.1.100', port: 1337 });
 api.setColor(255, 255, 255);
 api.print('HELLO');
 await api.send();
@@ -29,9 +29,9 @@ When installed as a dependency a `hub75` binary is also available (`npx hub75 ..
 Run any firmware command from the shell (either via `npx hub75` or `yarn tsx src/index.ts` during development):
 
 ```sh
-HUB75_IP=10.0.0.223 yarn tsx src/index.ts set-color 255 255 255
-HUB75_IP=10.0.0.223 yarn tsx src/index.ts set-cursor 2 10
-HUB75_IP=10.0.0.223 yarn tsx src/index.ts print HELLO
+HUB75_IP=192.168.1.100 yarn tsx src/index.ts set-color 255 255 255
+HUB75_IP=192.168.1.100 yarn tsx src/index.ts set-cursor 2 10
+HUB75_IP=192.168.1.100 yarn tsx src/index.ts print HELLO
 ```
 
 Supported commands mirror the firmware table:
@@ -61,7 +61,7 @@ Every `Api` method queues its command. Call `await api.send()` to flush the curr
 
 ## Image uploader
 
-`HUB75_IP=10.0.0.223 yarn img` (or `yarn tsx src/img.ts [path/to.png]`) loads [`src/nature.png`](src/nature.png) by default, converts it to RGB332 bytes (RRR GGG BB), streams them via the `CMD_FRAMEBUFFER_*` commands, and flushes the framebuffer. Supply a custom PNG path as the first argument to push another still image (64×64 recommended). Set `HUB75_WIDTH`/`HUB75_HEIGHT` if your panel resolution differs—the script resizes automatically. If your ESP32 struggles with rapid packets, set `HUB75_CHUNK_DELAY_MS` (e.g., `5`) to pause between framebuffer chunk packets.
+`HUB75_IP=192.168.1.100 yarn img` (or `yarn tsx src/img.ts [path/to.png]`) loads [`src/nature.png`](src/nature.png) by default, converts it to RGB332 bytes (RRR GGG BB), streams them via the `CMD_FRAMEBUFFER_*` commands, and flushes the framebuffer. Supply a custom PNG path as the first argument to push another still image (64×64 recommended). Set `HUB75_WIDTH`/`HUB75_HEIGHT` if your panel resolution differs—the script resizes automatically. If your ESP32 struggles with rapid packets, set `HUB75_CHUNK_DELAY_MS` (e.g., `5`) to pause between framebuffer chunk packets.
 
 Example batch file (`commands.json`):
 
@@ -76,7 +76,7 @@ Example batch file (`commands.json`):
 Send it with:
 
 ```sh
-HUB75_IP=10.0.0.223 yarn tsx src/index.ts batch @commands.json
+HUB75_IP=192.168.1.100 yarn tsx src/index.ts batch @commands.json
 ```
 
 ## Clock streamer
@@ -92,7 +92,7 @@ The `regionBitmap8Bit` API method and `region-bitmap-8bit` CLI command allow you
 ```ts
 import { HUB75, rgb332 } from 'hub75-ts';
 
-const api = new HUB75({ ip: '10.0.0.223', port: 1337 });
+const api = new HUB75({ ip: '192.168.1.100', port: 1337 });
 
 // Create a 4x4 gradient from red to blue
 const gradient = Buffer.alloc(16);
@@ -124,7 +124,7 @@ You can also use the CLI with a JSON array of RGB332 pixel values:
 ```sh
 # Draw a 2x2 colored square at position (10, 10)
 # Pixels: red, green, blue, yellow
-HUB75_IP=10.0.0.223 yarn tsx src/index.ts region-bitmap-8bit 10 10 2 2 '[224,28,3,252]'
+HUB75_IP=192.168.1.100 yarn tsx src/index.ts region-bitmap-8bit 10 10 2 2 '[224,28,3,252]'
 ```
 
 ### Example Script
