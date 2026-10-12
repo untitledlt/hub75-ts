@@ -22,6 +22,7 @@ export declare const CMD: {
     readonly FRAMEBUFFER_CHUNK: 80;
     readonly FRAMEBUFFER_FLUSH: 81;
     readonly FRAMEBUFFER_CLEAR: 82;
+    readonly PING: 97;
     readonly REGION_BITMAP: 116;
     readonly REGION_BITMAP_8BIT: 117;
     readonly POLICE_START: 112;
@@ -49,6 +50,8 @@ export declare class HUB75 {
     private pendingByteLength;
     constructor({ ip, port, socket }: HUB75Options);
     clear(): void;
+    /** No-op keep-alive; refreshes the firmware's idle timer without drawing anything. */
+    ping(): Promise<void>;
     setColor(r: number, g: number, b: number): void;
     setCursor(x: number, y: number): void;
     setTextSize(size: number): void;

@@ -21,6 +21,7 @@ export const CMD = {
     FRAMEBUFFER_CHUNK: 0x50,
     FRAMEBUFFER_FLUSH: 0x51,
     FRAMEBUFFER_CLEAR: 0x52,
+    PING: 0x61,
     REGION_BITMAP: 0x74,
     REGION_BITMAP_8BIT: 0x75,
     POLICE_START: 0x70,
@@ -28,12 +29,17 @@ export const CMD = {
     PROGRESS_START: 0x72,
     PROGRESS_STOP: 0x73,
 };
+const WRITE_STALL_WARNING_MS = 3000;
 export class HUB75 {
     constructor({ ip, port = 1337, socket }) {
         this.pendingFrames = [];
         this.pendingByteLength = 0;
         this.socket = socket ?? net.createConnection({ host: ip, port });
         this.socket.setNoDelay(true);
+        // Detect a silently dead/blackholed path (e.g. a VLAN boundary dropping
+        // packets without an RST) faster than the OS default, instead of hanging
+        // forever with no error.
+        this.socket.setKeepAlive(true, 10000);
         const isPending = this.socket.pending ?? false;
         this.ready = isPending
             ? new Promise((resolve, reject) => {
@@ -43,6 +49,7 @@ export class HUB75 {
                 };
                 const onConnect = () => {
                     cleanup();
+                    console.log(`HUB75 TCP connected to ${ip}:${port}`);
                     resolve();
                 };
                 const onError = (error) => {
@@ -59,10 +66,21 @@ export class HUB75 {
         this.socket.on('error', (error) => {
             console.error('TCP socket error', error);
         });
+        this.socket.on('close', (hadError) => {
+            console.error(`HUB75 TCP connection closed (hadError=${hadError})`);
+        });
+        this.socket.on('end', () => {
+            console.error('HUB75 TCP connection ended by remote (ESP32 closed the socket)');
+        });
         this.sendQueue = Promise.resolve();
     }
     clear() {
         this.sendCommand({ id: CMD.CLEAR });
+    }
+    /** No-op keep-alive; refreshes the firmware's idle timer without drawing anything. */
+    async ping() {
+        this.sendCommand({ id: CMD.PING });
+        await this.send();
     }
     setColor(r, g, b) {
         this.sendCommand({ id: CMD.SET_COLOR, payload: [r, g, b] });
@@ -306,7 +324,17 @@ export class HUB75 {
             };
             const cleanup = () => {
                 this.socket.off('error', onError);
+                clearTimeout(watchdog);
             };
+            // A write that never completes (no error, no callback) usually means
+            // the path to the ESP32 is silently dropping packets rather than
+            // refusing the connection outright — flag it instead of hanging
+            // every subsequent command behind it with no log output.
+            const watchdog = setTimeout(() => {
+                console.error(`HUB75 TCP write stalled for >${WRITE_STALL_WARNING_MS}ms ` +
+                    `(cmd=0x${frame[0]?.toString(16).padStart(2, '0')}, ${frame.length} bytes) — ` +
+                    'socket appears hung, possibly a dropped/blackholed network path');
+            }, WRITE_STALL_WARNING_MS);
             this.socket.once('error', onError);
             try {
                 this.socket.write(frame, () => {
