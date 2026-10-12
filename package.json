@@ -1,6 +1,6 @@
 {
   "name": "hub75-ts",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "TypeScript API and CLI helpers for ESP32 HUB75 panels",
   "type": "module",
   "main": "./dist/api.js",
